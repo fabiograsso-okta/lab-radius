@@ -1,8 +1,6 @@
-# Makefile for managing the LDAP Docker environment
--include .env
-export
+# Makefile for managing the RADIUS Docker environment
 
-.PHONY: help start start-logs stop stop-logs restart restart-logs logs build configure check-prereqs
+.PHONY: help start start-logs stop stop-logs restart restart-logs logs build configure radius-test check-prereqs
 
 help:
 	@echo "Usage: make [target]"
