@@ -1,0 +1,19 @@
+services:
+
+  radius-agent:
+    build: ./radius-agent
+    volumes:
+      - ./data/config:/opt/okta/ragent/user/config/radius
+      - ./data/lib:/var/lib/ragent
+      - ./data/logs:/opt/okta/ragent/logs
+    platform: linux/amd64 # Workaround for compatibility with MacOS
+    stdin_open: true
+    tty: true
+    ports:
+        - "1812:1812/udp"
+        - "1813:1813/udp"
+  radius-client:
+    build: ./radius-client
+    platform: linux/amd64 # Workaround for compatibility with MacOS
+    stdin_open: true
+    tty: true
