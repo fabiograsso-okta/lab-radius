@@ -1,4 +1,6 @@
 # Makefile for managing the RADIUS Docker environment
+-include .env
+export
 
 .PHONY: help start start-logs stop stop-logs restart restart-logs logs build configure radius-test check-prereqs
 
@@ -63,17 +65,26 @@ configure:
 	@docker-compose exec okta-radius-agent /bin/bash -c "source /opt/okta/ragent/scripts/configure.sh"
 
 radius-test:
-#	@bash ./radius-client/radiustest.sh
 	@docker compose exec radclient test
 
 test: radius-test
 
 check-prereqs:
 	@echo "--> Checking prerequisites..."
+	@# 1. Check deb file
 	@if ! ls ./docker/okta-radius-agent/OktaRadiusAgentSetup-*.deb 1>/dev/null 2>&1; then \
-		echo "\033[0;31mERROR: Okta Agent installer (.deb) not found!\033[0m"; \
-		echo "Please place the downloaded agent file in the './okta-agent/' directory."; \
+		echo "\033[0;31mERROR: Okta RADIUS Agent installer (.deb) not found!\033[0m"; \
+		echo "Please place the downloaded agent file in the './docker/okta-radius-agent/' directory."; \
 		exit 1; \
 	fi
-	@echo "  [✔] Okta Agent installer found."
+	@echo "  [✔] Okta RADIUS Agent installer found."
+	@# 2. Check that specific required variables are not empty
+	@for var in OKTA_ORG RADIUS_SECRET RADIUS_PORT OPENVPN_PASSWORD; do \
+		if [ -z "$${!var}" ]; then \
+			echo "\033[0;31mERROR: Environment variable '$${var}' is not set or is empty.\033[0m"; \
+			echo "Please check your .env file."; \
+			exit 1; \
+		fi; \
+	done
+	@echo "  [✔] Required environment variables are set."
 	@echo "--> Prerequisites check passed."

@@ -9,8 +9,10 @@ services:
     platform: linux/amd64 # Workaround for compatibility with MacOS
     stdin_open: true
     tty: true
+    env_file:
+      - .env
     ports:
-        - "${RADIUS_PORT}:${RADIUS_PORT}/udp"
+      - "${RADIUS_PORT}:${RADIUS_PORT}/udp"
     restart: unless-stopped
 
 
