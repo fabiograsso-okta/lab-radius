@@ -1,75 +1,54 @@
 #!/bin/bash
 
 echo ""
-echo ""
-echo "############################ RADIUS Test Client  ##############################"
+echo "############################ RADIUS Test Client ##############################"
 echo "#                                                                             #"
-echo "# This script will send a RADIUS authentication request using the radclient   #"
-echo "# utility.                                                                    #"
-echo "#                                                                             #"
-echo "# Press Enter to use default values shown in [brackets].                      #"
-echo "#                                                                             #"
-echo "# To remove the cached parameters, delete the file /tmp/.radius.env           #"
+echo "# This script sends a RADIUS authentication request using radclient.          #"
 echo "#                                                                             #"
 echo "###############################################################################"
 echo ""
-echo ""
 
+# Load cached values if available
 [ -f /tmp/.radius.env ] && source /tmp/.radius.env
 
+# Set fixed parameters
+RADIUS_SERVER_ADDRESS="okta-radius-agent"
+RADIUS_SERVER_PORT=1812
+RADIUS_SERVER_SECRET="${RADIUS_SECRET}"
 
-# Use existing RADIUS_ env vars or fallback hardcoded defaults
+# Prompt user
 : "${RADIUS_USERNAME:=testuser@atko.email}"
 : "${RADIUS_PASSWORD:=testpassword}"
-: "${RADIUS_SERVER_ADDRESS:=radius-agent}"
-: "${RADIUS_SERVER_PORT:=1812}"
-: "${RADIUS_SERVER_SECRET:=test123}"
 
-# Prompt for user input with current RADIUS_ env vars as defaults
 read -p "User-Name [$RADIUS_USERNAME]: " input
 RADIUS_USERNAME=${input:-$RADIUS_USERNAME}
 
 read -p "User-Password [$RADIUS_PASSWORD]: " input
 RADIUS_PASSWORD=${input:-$RADIUS_PASSWORD}
 
-read -p "Radius Server Address [$RADIUS_SERVER_ADDRESS]: " input
-RADIUS_SERVER_ADDRESS=${input:-$RADIUS_SERVER_ADDRESS}
-
-read -p "Radius Server Port [$RADIUS_SERVER_PORT]: " input
-RADIUS_SERVER_PORT=${input:-$RADIUS_SERVER_PORT}
-
-read -p "Radius Server Secret [$RADIUS_SERVER_SECRET]: " input
-RADIUS_SERVER_SECRET=${input:-$RADIUS_SERVER_SECRET}
-
-RADIUS_USER_IP=$(curl -s http://checkip.amazonaws.com)
-# Alternative DEFAULT_LOCAL_IP=$(curl -s https://1.1.1.1/cdn-cgi/trace | grep '^ip=' | cut -d= -f2)
+RADIUS_USER_IP=$(curl -k -s http://checkip.amazonaws.com)
 read -p "IP Address (NAS-IP-Address) [$RADIUS_USER_IP]: " input
 RADIUS_NAS_IP=${input:-$RADIUS_USER_IP}
 
-# Save variables to a file for later sourcing
+# Save vars
 cat <<EOF > /tmp/.radius.env
 export RADIUS_USERNAME="$RADIUS_USERNAME"
 export RADIUS_PASSWORD="$RADIUS_PASSWORD"
-export RADIUS_SERVER_ADDRESS="$RADIUS_SERVER_ADDRESS"
-export RADIUS_SERVER_PORT="$RADIUS_SERVER_PORT"
-export RADIUS_SERVER_SECRET="$RADIUS_SERVER_SECRET"
 EOF
 
 echo ""
 echo "Sending RADIUS authentication request..."
 echo ""
 
-
-# Send first request
 output=$(printf 'User-Name = "%s"
 User-Password = "%s"
 NAS-IP-Address = %s
 ' "$RADIUS_USERNAME" "$RADIUS_PASSWORD" "$RADIUS_NAS_IP" | \
-  docker-compose exec -T radclient radclient -x "$RADIUS_SERVER_ADDRESS:$RADIUS_SERVER_PORT" auth "$RADIUS_SERVER_SECRET")
+  radclient -x "$RADIUS_SERVER_ADDRESS:$RADIUS_SERVER_PORT" auth "$RADIUS_SERVER_SECRET")
 
-# Show initial response
 echo -e "\n\033[1;36mRaw server response:\033[0m"
 echo "$output"
+
 
 # MFA Challenge loop
 while echo "$output" | grep -q "Access-Challenge"; do
@@ -103,7 +82,7 @@ User-Password = "%s"
 State = "%s"
 NAS-IP-Address = %s
 ' "$RADIUS_USERNAME" "$MFA_RESPONSE" "$STATE" "$RADIUS_NAS_IP" | \
-    docker-compose exec -T radclient radclient -x "$RADIUS_SERVER_ADDRESS:$RADIUS_SERVER_PORT" auth "$RADIUS_SERVER_SECRET")
+    radclient -x "$RADIUS_SERVER_ADDRESS:$RADIUS_SERVER_PORT" auth "$RADIUS_SERVER_SECRET")
   echo -e "\n\033[1;36mRaw server response:\033[0m"
   echo "$output"
 done

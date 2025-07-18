@@ -13,9 +13,7 @@ RUN apt-get update && \
 
 WORKDIR /tmp/radius/
 
-# COPY ./radlogin4_linux_x64.tar.gz radlogin4_linux_x64.tar.gz
-
-RUN curl --insecure -o radlogin4_linux_x64.tar.gz "https://www.iea-software.com/ftp/radiusv5/linux/radlogin4_linux_x64.tar.gz"  && \
+RUN curl -k -o radlogin4_linux_x64.tar.gz "https://www.iea-software.com/ftp/radiusv5/linux/radlogin4_linux_x64.tar.gz"  && \
     tar -xf radlogin4_linux_x64.tar.gz && \
     printf "C\n" | ./install.pl && \
     rm -rf /tmp/radius
