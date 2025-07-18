@@ -63,7 +63,10 @@ configure:
 	@docker-compose exec okta-radius-agent /bin/bash -c "source /opt/okta/ragent/scripts/configure.sh"
 
 radius-test:
-	@bash ./radius-client/radiustest.sh
+#	@bash ./radius-client/radiustest.sh
+	@docker compose exec radclient test
+
+test: radius-test
 
 check-prereqs:
 	@echo "--> Checking prerequisites..."

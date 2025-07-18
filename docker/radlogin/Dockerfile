@@ -22,8 +22,7 @@ RUN curl --insecure -o radlogin4_linux_x64.tar.gz "https://www.iea-software.com/
 
 WORKDIR /usr/local/radius/
 
-# Override the default radiusd.ini
-RUN bash -c 'cat > /usr/local/radius/radiusd.ini <<EOF
+COPY <<EOF /usr/local/radius/radiusd.ini
 [RadiusNT]
 continue=>> Continue
 rlthreads=10
@@ -43,8 +42,7 @@ DataDirectory=/usr/local/radius
 LogDir=/usr/local/radius/log
 AuthPort=1812
 AcctPort=1813
-EOF'
-
+EOF
 
 # Expose the default web interface port
 EXPOSE 8020
