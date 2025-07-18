@@ -21,5 +21,8 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # Set tini as entrypoint
 ENTRYPOINT ["/usr/bin/tini", "--"]
+
+EXPOSE 1812
+
 # App command 
 CMD ["/usr/local/bin/entrypoint.sh"]

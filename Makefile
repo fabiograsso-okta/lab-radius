@@ -13,7 +13,8 @@ help:
 	@echo "  start-logs     - Checks prerequisites, starts containers in the background, and follows logs."
 	@echo "  start-live     - Checks prerequisites, starts containers in live mode"
 	@echo "  restart-logs   - Restarts containers in the background and follows logs."
-	@echo "  build          - Forces a rebuild of the images from scratch."
+	@echo "  build          - Build all the images."
+	@echo "  rebuild        - Forces a rebuild of the images from scratch. (--no-cache --parallel --pull --force-rm)"
 	@echo "  kill           - Kill the containers and remove orphans"
 	@echo "  configure      - Runs the interactive Okta agent configuration script."
 	@echo "  radius-test    - Runs the radclient in order to test the RADIUS Agent"
@@ -45,9 +46,13 @@ start-logs: check-prereqs
 
 restart-logs: stop start-logs
 
-build:
+rebuild:
 	@echo "--> Forcing a rebuild of all images..."
 	@docker-compose build --no-cache --parallel --pull --force-rm
+
+build:
+	@echo "--> Build all images..."
+	@docker-compose build
 
 kill:
 	@echo "--> Killing the containers and remove orphanse"
@@ -62,7 +67,7 @@ radius-test:
 
 check-prereqs:
 	@echo "--> Checking prerequisites..."
-	@if ! ls ./radius-agent/OktaRadiusAgentSetup-*.deb 1>/dev/null 2>&1; then \
+	@if ! ls ./docker/okta-radius-agent/OktaRadiusAgentSetup-*.deb 1>/dev/null 2>&1; then \
 		echo "\033[0;31mERROR: Okta Agent installer (.deb) not found!\033[0m"; \
 		echo "Please place the downloaded agent file in the './okta-agent/' directory."; \
 		exit 1; \

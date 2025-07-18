@@ -1,19 +1,64 @@
 services:
 
-  radius-agent:
-    build: ./radius-agent
+  okta-radius-agent:
+    build: ./docker/okta-radius-agent
     volumes:
-      - ./data/config:/opt/okta/ragent/user/config/radius
-      - ./data/lib:/var/lib/ragent
-      - ./data/logs:/opt/okta/ragent/logs
+      - ./data/okta/config:/opt/okta/ragent/user/config/radius
+      - ./data/okta/lib:/var/lib/ragent
+      - ./data/okta/logs:/opt/okta/ragent/logs
     platform: linux/amd64 # Workaround for compatibility with MacOS
     stdin_open: true
     tty: true
     ports:
         - "1812:1812/udp"
         - "1813:1813/udp"
-  radius-client:
-    build: ./radius-client
+
+  radclient:
+    build: ./docker/radclient
     platform: linux/amd64 # Workaround for compatibility with MacOS
     stdin_open: true
     tty: true
+    env_file:
+      - .env
+
+  openvpn-as:
+    image: openvpn/openvpn-as:latest
+    ports:
+      - "943:943"   # Admin Web UI and Client Web UI (HTTPS) 
+      - "443:443"   # OpenVPN TCP port 
+      - "1194:1194/udp" # OpenVPN UDP port 
+    volumes:
+      - ./data/openvpn/config:/openvpn 
+    cap_add:
+      - NET_ADMIN # Grants the container necessary network administration capabilities 
+      - MKNOD # Allows the container to create device nodes 
+    devices:
+      - /dev/net/tun:/dev/net/tun # Provides access to the TUN device for VPN traffic 
+
+
+  radlogin:
+    build: ./docker/radlogin
+    platform: linux/amd64 # Workaround for compatibility with MacOS
+    stdin_open: true
+    tty: true
+    ports:
+      - "8020:8020"
+    configs:
+      - source: server
+        target: /usr/local/radius/server
+      - source: common.ini
+        target: /usr/local/iea/common.ini
+    volumes:
+      - ./data/radclient/conf/profile.dat:/usr/local/radius/profile.dat
+      - ./data/radclient/conf/monitor.dat:/usr/local/radius/monitor.dat
+      - ./data/radclient/conf/listen.dat:/usr/local/radius/listen.dat
+      - ./data/radclient/logs:/usr/local/radius/logs
+
+configs:
+  server:
+    content: |
+      okta-radius-agent	${RADIUS_SECRET}	1812	1813	180	2	3799	
+  common.ini:
+    content: |  
+      []
+      WCPassword=${RADLOGIN_ADMIN_PASSWORD}

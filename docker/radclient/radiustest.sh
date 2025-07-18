@@ -19,7 +19,7 @@ echo ""
 
 
 # Use existing RADIUS_ env vars or fallback hardcoded defaults
-: "${RADIUS_USERNAME:=testuser}"
+: "${RADIUS_USERNAME:=testuser@atko.email}"
 : "${RADIUS_PASSWORD:=testpassword}"
 : "${RADIUS_SERVER_ADDRESS:=radius-agent}"
 : "${RADIUS_SERVER_PORT:=1812}"
@@ -65,7 +65,7 @@ output=$(printf 'User-Name = "%s"
 User-Password = "%s"
 NAS-IP-Address = %s
 ' "$RADIUS_USERNAME" "$RADIUS_PASSWORD" "$RADIUS_NAS_IP" | \
-  docker-compose exec -T radius-client radclient -x "$RADIUS_SERVER_ADDRESS:$RADIUS_SERVER_PORT" auth "$RADIUS_SERVER_SECRET")
+  docker-compose exec -T radclient radclient -x "$RADIUS_SERVER_ADDRESS:$RADIUS_SERVER_PORT" auth "$RADIUS_SERVER_SECRET")
 
 # Show initial response
 echo -e "\n\033[1;36mRaw server response:\033[0m"
@@ -103,7 +103,7 @@ User-Password = "%s"
 State = "%s"
 NAS-IP-Address = %s
 ' "$RADIUS_USERNAME" "$MFA_RESPONSE" "$STATE" "$RADIUS_NAS_IP" | \
-    docker-compose exec -T radius-client radclient -x "$RADIUS_SERVER_ADDRESS:$RADIUS_SERVER_PORT" auth "$RADIUS_SERVER_SECRET")
+    docker-compose exec -T radclient radclient -x "$RADIUS_SERVER_ADDRESS:$RADIUS_SERVER_PORT" auth "$RADIUS_SERVER_SECRET")
   echo -e "\n\033[1;36mRaw server response:\033[0m"
   echo "$output"
 done
