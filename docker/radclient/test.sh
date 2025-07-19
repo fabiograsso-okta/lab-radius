@@ -7,7 +7,10 @@
 #              using radclient CLI, and parsing the response to ask additional input
 #              if requested by the RADIUS server (i.e. choose the MFA factor)
 #
-# Usage: ./test.sh
+# Usage: ./test.sh [username] [password] [server] [secret] [port] [ip]
+#        if args are omitted then:
+#        1. Uses .env variables: TEST_USERNAME, TEST_PASSWORD, RADIUS_SERVER, RADIUS_SECRET, RADIUS_PORT
+#        2. Prompt the user
 #
 # -----------------------------------------------------------------------------
 
@@ -19,31 +22,88 @@ echo "#                                                                         
 echo "###############################################################################"
 echo ""
 
-# Set default parameters
-"${RADIUS_SERVER:=okta-radius-agent}"
-"${RADIUS_PORT:=1812}"
-"${RADIUS_SECRET:=test123}"
+# 1. Try command line arguments ($1, $2, ...)
+# 2. If arguments are empty, try environment variables (e.g., $TEST_USERNAME, $TEST_PASSWORD, ...)
+# 3. If still empty, prompt the user
 
-# Prompt user
-[ -f /tmp/.radius.env ] && source /tmp/.radius.env # Load cached values if available
-: "${RADIUS_USERNAME:=testuser@atko.email}"
-: "${RADIUS_PASSWORD:=testpassword}"
+# TEST_USERNAME
+if [[ -n "$1" ]]; then                    # Option 1: Argument provided
+  TEST_USERNAME="$1"
+  echo "User-Name: $TEST_USERNAME"
+elif [[ -n "${TEST_USERNAME}" ]]; then    # Option 2: Environment variable provided
+  TEST_USERNAME="${TEST_USERNAME}"
+  echo "User-Name: $TEST_USERNAME"
+else                                      # Option 3: No argument or env var, ask the user with a default
+  : "${TEST_USERNAME:=testuser@atko.email}"
+  read -p "User-Name [$TEST_USERNAME]: " input
+  TEST_USERNAME=${input:-$TEST_USERNAME}
+fi
 
-read -p "User-Name [$RADIUS_USERNAME]: " input
-RADIUS_USERNAME=${input:-$RADIUS_USERNAME}
+# TEST_PASSWORD
+if [[ -n "$2" ]]; then                    # Option 1: Argument provided
+  TEST_PASSWORD="$2"
+  echo "User-Password: $TEST_PASSWORD"
+elif [[ -n "${TEST_PASSWORD}" ]]; then    # Option 2: Environment variable provided
+  TEST_PASSWORD="${TEST_PASSWORD}"
+  echo "User-Password: $TEST_PASSWORD"
+else                                      # Option 3: No argument or env var, ask the user with a default
+  : "${TEST_PASSWORD:=testpassword}"
+  read -p "User-Password [$TEST_PASSWORD]: " input
+  TEST_PASSWORD=${input:-$TEST_PASSWORD}
+fi
 
-read -p "User-Password [$RADIUS_PASSWORD]: " input
-RADIUS_PASSWORD=${input:-$RADIUS_PASSWORD}
+# RADIUS_SERVER
+if [[ -n "$3" ]]; then                    # Option 1: Argument provided
+  RADIUS_SERVER="$3"
+  echo "Radius Server Address: $RADIUS_SERVER"
+elif [[ -n "${RADIUS_SERVER}" ]]; then    # Option 2: Environment variable provided
+  RADIUS_SERVER="${RADIUS_SERVER}"
+  echo "Radius Server Address: $RADIUS_SERVER"
+else                                      # Option 3: No argument or env var, ask the user with a default
+  : "${RADIUS_SERVER:=okta-radius-agent}"
+  read -p "Radius Server Address [$RADIUS_SERVER]: " input
+  RADIUS_SERVER=${input:-$RADIUS_SERVER}
+fi
 
-RADIUS_USER_IP=$(curl -s http://checkip.amazonaws.com || echo "127.0.0.1")
-read -p "IP Address (NAS-IP-Address) [$RADIUS_USER_IP]: " input
-RADIUS_NAS_IP=${input:-$RADIUS_USER_IP}
+# RADIUS_SECRET
+if [[ -n "$4" ]]; then                    # Option 1: Argument provided
+  RADIUS_SECRET="$4"
+  echo "Radius Server Secret: $RADIUS_SECRET"
+elif [[ -n "${RADIUS_SECRET}" ]]; then    # Option 2: Environment variable provided
+  RADIUS_SECRET="${RADIUS_SECRET}"
+  echo "Radius Server Secret: $RADIUS_SECRET"
+else                                      # Option 3: No argument or env var, ask the user with a default
+  : "${RADIUS_SECRET:=test123}"
+  read -p "Radius Server Secret [$RADIUS_SECRET]: " input
+  RADIUS_SECRET=${input:-$RADIUS_SECRET}
+fi
 
-# Save vars
-cat <<EOF > /tmp/.radius.env
-export RADIUS_USERNAME="$RADIUS_USERNAME"
-export RADIUS_PASSWORD="$RADIUS_PASSWORD"
-EOF
+# RADIUS_PORT
+if [[ -n "$5" ]]; then                    # Option 1: Argument provided
+  RADIUS_PORT="$5"
+  echo "Radius Server Port: $RADIUS_PORT"
+elif [[ -n "${RADIUS_PORT}" ]]; then    # Option 2: Environment variable provided
+  RADIUS_PORT="${RADIUS_PORT}"
+  echo "Radius Server Port: $RADIUS_PORT"
+else                                      # Option 3: No argument or env var, ask the user with a default
+  : "${RADIUS_PORT:=1812}"
+  read -p "Radius Server Port [$RADIUS_PORT]: " input
+  RADIUS_PORT=${input:-$RADIUS_PORT}
+fi
+
+# TEST_IP
+if [[ -n "$6" ]]; then                    # Option 1: Argument provided
+  TEST_IP="$6"
+  echo "IP Address (NAS-IP-Address): $TEST_IP"
+elif [[ -n "${TEST_IP}" ]]; then    # Option 2: Environment variable provided
+  TEST_IP="${TEST_IP}"
+  echo "IP Address (NAS-IP-Address): $TEST_IP"
+else                                      # Option 3: No argument or env var, ask the user with a default
+  TEST_IP=$(curl -s http://checkip.amazonaws.com || echo "127.0.0.1")
+  echo "IP Address (NAS-IP-Address): $TEST_IP"
+#  read -p "IP Address (NAS-IP-Address) [$TEST_IP]: " input
+#  TEST_IP=${input:-$TEST_IP}
+fi
 
 echo ""
 echo "Sending RADIUS authentication request..."
@@ -52,7 +112,7 @@ echo ""
 output=$(printf 'User-Name = "%s"
 User-Password = "%s"
 NAS-IP-Address = %s
-' "$RADIUS_USERNAME" "$RADIUS_PASSWORD" "$RADIUS_NAS_IP" | \
+' "$TEST_USERNAME" "$TEST_PASSWORD" "$TEST_IP" | \
   radclient -x "$RADIUS_SERVER:$RADIUS_PORT" auth "$RADIUS_SECRET")
 
 echo -e "\n\033[1;36mRaw server response:\033[0m"
@@ -90,7 +150,7 @@ while echo "$output" | grep -q "Access-Challenge"; do
 User-Password = "%s"
 State = "%s"
 NAS-IP-Address = %s
-' "$RADIUS_USERNAME" "$MFA_RESPONSE" "$STATE" "$RADIUS_NAS_IP" | \
+' "$TEST_USERNAME" "$MFA_RESPONSE" "$STATE" "$TEST_IP" | \
     radclient -x "$RADIUS_SERVER:$RADIUS_PORT" auth "$RADIUS_SECRET")
   echo -e "\n\033[1;36mRaw server response:\033[0m"
   echo "$output"

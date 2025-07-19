@@ -16,10 +16,11 @@ help:
 	@echo "  start-live     - Checks prerequisites, starts containers in live mode"
 	@echo "  restart-logs   - Restarts containers in the background and follows logs."
 	@echo "  build          - Build all the images."
-	@echo "  rebuild        - Forces a rebuild of the images from scratch. (--no-cache --parallel --pull --force-rm)"
+	@echo "  rebuild        - Forces a rebuild of the images from scratch."
 	@echo "  kill           - Kill the containers and remove orphans"
 	@echo "  configure      - Runs the interactive Okta agent configuration script."
 	@echo "  radius-test    - Runs the radclient in order to test the RADIUS Agent"
+	@echo "                   (you can add USERNAME=<username> PASSWORD=<password>)"
 	@echo "  check-prereqs  - Runs prerequisite checks without starting the services."
 
 start: check-prereqs
@@ -65,7 +66,8 @@ configure:
 	@docker-compose exec okta-radius-agent /bin/bash -c "source /opt/okta/ragent/scripts/configure.sh"
 
 radius-test:
-	@docker compose exec radclient test
+	@echo "--> Launching test script..."
+	@docker compose run --rm radclient test $(USERNAME) $(PASSWORD)
 
 test: radius-test
 
