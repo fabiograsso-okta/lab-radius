@@ -1,4 +1,13 @@
 #!/bin/bash
+#
+# Author: Fabio Grasso <fabio.grasso@okta.com>
+# License: Apache-2.0
+# Version: 1.0.0
+# Description: Entrypoint docker script to handle the startup or the Okta RADIUS Agent
+#
+# Usage: ./entrypoint.sh
+#
+# -----------------------------------------------------------------------------
 set -e
 
 JAVA_BIN="/opt/okta/ragent/jre/linux/bin/java"

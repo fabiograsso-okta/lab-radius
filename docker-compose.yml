@@ -1,3 +1,15 @@
+#
+# Author: Fabio Grasso <fabio.grasso@okta.com>
+# License: Apache-2.0
+# Version: 1.0.0
+# Description: Docker-compose to start a full RADIUS Lab with:
+#              - Okta RADIUS Agent (RADIUS Server)
+#              - radclient (CLI RADIUS Client)
+#              - OpenVPN AS
+#
+# -----------------------------------------------------------------------------
+
+version: '3.8'
 services:
 
   okta-radius-agent:
@@ -14,7 +26,8 @@ services:
     ports:
       - "${RADIUS_PORT}:${RADIUS_PORT}/udp"
     restart: unless-stopped
-
+    networks:
+      - radius_network
 
   radclient:
     build: ./docker/radclient
@@ -26,7 +39,8 @@ services:
     env_file:
       - .env
     restart: unless-stopped
-
+    networks:
+      - radius_network
  
   openvpn-as:
     build: ./docker/openvpn-as
@@ -46,3 +60,9 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    networks:
+      - radius_network
+
+networks:
+  radius_network:
+    driver: bridge

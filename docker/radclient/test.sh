@@ -1,4 +1,15 @@
 #!/bin/bash
+#
+# Author: Fabio Grasso <fabio.grasso@okta.com>
+# License: Apache-2.0
+# Version: 1.0.0
+# Description: Script to test a RADIUS authentication within the Okta RADIUS Agent,
+#              using radclient CLI, and parsing the response to ask additional input
+#              if requested by the RADIUS server (i.e. choose the MFA factor)
+#
+# Usage: ./test.sh
+#
+# -----------------------------------------------------------------------------
 
 echo ""
 echo "############################ RADIUS Test Client ##############################"
@@ -8,15 +19,13 @@ echo "#                                                                         
 echo "###############################################################################"
 echo ""
 
-# Load cached values if available
-[ -f /tmp/.radius.env ] && source /tmp/.radius.env
-
-# Set fixed parameters
-RADIUS_SERVER_ADDRESS="okta-radius-agent"
-RADIUS_SERVER_PORT=1812
-RADIUS_SERVER_SECRET="${RADIUS_SECRET}"
+# Set default parameters
+"${RADIUS_SERVER:=okta-radius-agent}"
+"${RADIUS_PORT:=1812}"
+"${RADIUS_SECRET:=test123}"
 
 # Prompt user
+[ -f /tmp/.radius.env ] && source /tmp/.radius.env # Load cached values if available
 : "${RADIUS_USERNAME:=testuser@atko.email}"
 : "${RADIUS_PASSWORD:=testpassword}"
 
@@ -26,7 +35,7 @@ RADIUS_USERNAME=${input:-$RADIUS_USERNAME}
 read -p "User-Password [$RADIUS_PASSWORD]: " input
 RADIUS_PASSWORD=${input:-$RADIUS_PASSWORD}
 
-RADIUS_USER_IP=$(curl -k -s http://checkip.amazonaws.com)
+RADIUS_USER_IP=$(curl -s http://checkip.amazonaws.com || echo "127.0.0.1")
 read -p "IP Address (NAS-IP-Address) [$RADIUS_USER_IP]: " input
 RADIUS_NAS_IP=${input:-$RADIUS_USER_IP}
 
@@ -44,7 +53,7 @@ output=$(printf 'User-Name = "%s"
 User-Password = "%s"
 NAS-IP-Address = %s
 ' "$RADIUS_USERNAME" "$RADIUS_PASSWORD" "$RADIUS_NAS_IP" | \
-  radclient -x "$RADIUS_SERVER_ADDRESS:$RADIUS_SERVER_PORT" auth "$RADIUS_SERVER_SECRET")
+  radclient -x "$RADIUS_SERVER:$RADIUS_PORT" auth "$RADIUS_SECRET")
 
 echo -e "\n\033[1;36mRaw server response:\033[0m"
 echo "$output"
@@ -82,7 +91,7 @@ User-Password = "%s"
 State = "%s"
 NAS-IP-Address = %s
 ' "$RADIUS_USERNAME" "$MFA_RESPONSE" "$STATE" "$RADIUS_NAS_IP" | \
-    radclient -x "$RADIUS_SERVER_ADDRESS:$RADIUS_SERVER_PORT" auth "$RADIUS_SERVER_SECRET")
+    radclient -x "$RADIUS_SERVER:$RADIUS_PORT" auth "$RADIUS_SECRET")
   echo -e "\n\033[1;36mRaw server response:\033[0m"
   echo "$output"
 done

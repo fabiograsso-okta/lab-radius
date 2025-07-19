@@ -1,5 +1,12 @@
 FROM ubuntu:24.04
 
+LABEL maintainer="Fabio Gasso <fabio.grasso@okta.com>"
+LABEL org.opencontainers.image.authors="Fabio Gasso <fabio.grasso@okta.com>"
+LABEL org.opencontainers.image.version="1.0.0"
+LABEL org.opencontainers.image.licenses="Apache-2.0"
+LABEL org.opencontainers.image.source="https://github.com/fabiograsso-okta/lab-radius"
+LABEL org.opencontainers.image.description="Okta RADIUS Agent"
+
 # Install prereq
 RUN apt-get update && apt-get install -y tini  && rm -rf /var/lib/apt/lists/*
 # curl sudo bash-completion net-tools
